@@ -1,5 +1,6 @@
 import os
-from typing import List, Optional
+from typing import List, Optional, Union
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -72,7 +73,29 @@ class Settings(BaseSettings):
     NAUKRI_REDIRECT_URI: str = "http://localhost:3000/social-callback"
 
     # Allowed CORS Origins
-    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    BACKEND_CORS_ORIGINS: List[str] = ["*"]
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def fix_postgres_scheme(cls, v: str) -> str:
+        if isinstance(v, str) and v.startswith("postgres://"):
+            return v.replace("postgres://", "postgresql://", 1)
+        return v
+
+    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",") if i.strip()]
+        elif isinstance(v, list):
+            return v
+        elif isinstance(v, str) and v.startswith("["):
+            import json
+            try:
+                return json.loads(v)
+            except Exception:
+                return [v]
+        return ["*"]
 
 
 settings = Settings()
