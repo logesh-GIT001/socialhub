@@ -25,7 +25,16 @@ function CallbackHandler() {
     }
   }
 
+  const errorParam = searchParams.get("error");
+  const errorDescription = searchParams.get("error_description");
+
   useEffect(() => {
+    if (errorParam) {
+      setStatus("error");
+      setErrorMsg(`LinkedIn Auth Error: ${errorParam} - ${errorDescription || "User cancelled or unauthorized."}`);
+      return;
+    }
+
     if (!platform || !code) {
       setStatus("error");
       setErrorMsg("Missing authorization code or platform parameter.");
