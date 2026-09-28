@@ -57,7 +57,8 @@ class LinkedInAdapter(BaseSocialAdapter):
             token_data = response.json()
             access_token = token_data["access_token"]
             
-            # 1. Try to fetch company pages managed by the user (if organization scope/access is granted)
+            # 1. Try to fetch company pages managed by the user
+            err_log = []
             try:
                 acls_url = "https://api.linkedin.com/v2/organizationalEntityAcls?q=roleAssignee&role=ADMINISTRATOR"
                 acls_response = await client.get(
@@ -84,10 +85,16 @@ class LinkedInAdapter(BaseSocialAdapter):
                                         "platform_user_id": org_urn,
                                         "account_name": f"{org_name} (LinkedIn Page)",
                                     }
-            except Exception:
-                pass
+                            else:
+                                err_log.append(f"org details fail {org_response.status_code}: {org_response.text}")
+                    else:
+                        err_log.append("acls empty (no pages found)")
+                else:
+                    err_log.append(f"acls fail {acls_response.status_code}: {acls_response.text}")
+            except Exception as e:
+                err_log.append(f"acls exception: {str(e)}")
             
-            # 2. Modern OpenID Connect userinfo endpoint (Standard for new LinkedIn Apps)
+            # 2. Modern OpenID Connect userinfo endpoint
             try:
                 userinfo_url = "https://api.linkedin.com/v2/userinfo"
                 userinfo_response = await client.get(
@@ -104,11 +111,13 @@ class LinkedInAdapter(BaseSocialAdapter):
                         "platform_user_id": f"urn:li:person:{person_sub}",
                         "account_name": name,
                     }
-            except Exception:
-                pass
+                else:
+                    err_log.append(f"userinfo fail {userinfo_response.status_code}: {userinfo_response.text}")
+            except Exception as e:
+                err_log.append(f"userinfo exception: {str(e)}")
 
             # 3. If everything above failed, their LinkedIn App lacks the required products.
-            raise Exception("LinkedIn API Error: Your LinkedIn Developer App is missing the required Products. Please go to the LinkedIn Developer Portal and ensure you have added both 'Sign In with LinkedIn using OpenID Connect' and 'Share on LinkedIn'.")
+            raise Exception(f"LinkedIn API Error: Missing products or permissions. Debug details: {'; '.join(err_log)}")
 
     async def refresh_token(self, refresh_token: str) -> Dict[str, Any]:
         if self.is_mock or refresh_token.startswith("mock_"):
