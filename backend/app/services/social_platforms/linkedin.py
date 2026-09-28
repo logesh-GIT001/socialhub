@@ -175,12 +175,12 @@ class LinkedInAdapter(BaseSocialAdapter):
 
         async with httpx.AsyncClient() as client:
             # Resolve author URN
-            if platform_user_id and (platform_user_id.startswith("urn:li:organization:") or platform_user_id.startswith("urn:li:person:")):
+            if platform_user_id and platform_user_id != "urn:li:person:me" and (platform_user_id.startswith("urn:li:organization:") or platform_user_id.startswith("urn:li:person:")):
                 author_urn = platform_user_id
-            elif platform_user_id:
+            elif platform_user_id and platform_user_id != "urn:li:person:me":
                 author_urn = f"urn:li:organization:{platform_user_id}"
             else:
-                # Fallback to fetching member URN
+                # Fallback to fetching member URN if none provided or if it's the "me" placeholder
                 profile_url = "https://api.linkedin.com/v2/me"
                 profile_response = await client.get(
                     profile_url, headers={"Authorization": f"Bearer {access_token}"}
