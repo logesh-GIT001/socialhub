@@ -181,12 +181,17 @@ class LinkedInAdapter(BaseSocialAdapter):
                 author_urn = f"urn:li:organization:{platform_user_id}"
             else:
                 # Fallback to fetching member URN if none provided or if it's the "me" placeholder
-                profile_url = "https://api.linkedin.com/v2/me"
-                profile_response = await client.get(
-                    profile_url, headers={"Authorization": f"Bearer {access_token}"}
-                )
-                profile_response.raise_for_status()
-                author_urn = f"urn:li:person:{profile_response.json()['id']}"
+                userinfo_url = "https://api.linkedin.com/v2/userinfo"
+                userinfo_res = await client.get(userinfo_url, headers={"Authorization": f"Bearer {access_token}"})
+                if userinfo_res.status_code == 200:
+                    author_urn = f"urn:li:person:{userinfo_res.json()['sub']}"
+                else:
+                    profile_url = "https://api.linkedin.com/v2/me"
+                    profile_response = await client.get(
+                        profile_url, headers={"Authorization": f"Bearer {access_token}"}
+                    )
+                    profile_response.raise_for_status()
+                    author_urn = f"urn:li:person:{profile_response.json()['id']}"
 
             post_url = "https://api.linkedin.com/v2/ugcPosts"
             
