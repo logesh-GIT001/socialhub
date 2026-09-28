@@ -13,6 +13,7 @@ import {
   User,
   RefreshCw,
   Loader2,
+  Trash2,
 } from "lucide-react";
 
 export default function PublishedPostsPage() {
@@ -39,6 +40,19 @@ export default function PublishedPostsPage() {
     },
     onError: (err: any) => {
       alert(`Publication retry failed: ${err.message}`);
+    },
+  });
+
+  // Delete log mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/posts/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["posts-list"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+      alert("Post deleted successfully.");
+    },
+    onError: (err: any) => {
+      alert(`Failed to delete post: ${err.message}`);
     },
   });
 
@@ -157,22 +171,43 @@ export default function PublishedPostsPage() {
                       </div>
                     </div>
 
-                    {/* Fails Action Panel */}
-                    {failed && hasPermission("posts:publish") && (
-                      <div className="shrink-0 w-full lg:w-auto pt-4 lg:pt-0 lg:border-l border-slate-100 dark:border-slate-800 lg:pl-6">
-                        <button
-                          onClick={() => retryMutation.mutate(post.id)}
-                          disabled={retryMutation.isPending}
-                          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-all shadow-md shadow-indigo-600/10"
-                        >
-                          {retryMutation.isPending ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <>
-                              <RefreshCw className="w-3.5 h-3.5" /> Force Retry Now
-                            </>
-                          )}
-                        </button>
+                    {/* Action Panel */}
+                    {(hasPermission("posts:delete") || (failed && hasPermission("posts:publish"))) && (
+                      <div className="shrink-0 w-full lg:w-auto pt-4 lg:pt-0 lg:border-l border-slate-100 dark:border-slate-800 lg:pl-6 space-y-2">
+                        {failed && hasPermission("posts:publish") && (
+                          <button
+                            onClick={() => retryMutation.mutate(post.id)}
+                            disabled={retryMutation.isPending}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-all shadow-md shadow-indigo-600/10"
+                          >
+                            {retryMutation.isPending ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <>
+                                <RefreshCw className="w-3.5 h-3.5" /> Force Retry Now
+                              </>
+                            )}
+                          </button>
+                        )}
+                        {hasPermission("posts:delete") && (
+                          <button
+                            onClick={() => {
+                              if (window.confirm("Are you sure you want to delete this post log? (Note: This will not delete the post from external social platforms)")) {
+                                deleteMutation.mutate(post.id);
+                              }
+                            }}
+                            disabled={deleteMutation.isPending}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-red-500/20 bg-red-500/5 hover:bg-red-500 hover:text-white text-red-500 font-semibold text-xs transition-all"
+                          >
+                            {deleteMutation.isPending ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Trash2 className="w-3.5 h-3.5" /> Delete Log
+                              </>
+                            )}
+                          </button>
+                        )}
                       </div>
                     )}
 
