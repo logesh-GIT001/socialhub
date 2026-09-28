@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     LINKEDIN_CLIENT_ID: Optional[str] = None
     LINKEDIN_CLIENT_SECRET: Optional[str] = None
     LINKEDIN_REDIRECT_URI: str = "http://localhost:3000/social-callback"
-    LINKEDIN_SCOPES: str = "openid profile email w_member_social w_organization_social"
+    LINKEDIN_SCOPES: str = "openid profile email w_member_social"
 
     # X (Twitter) OAuth 2.0
     X_CLIENT_ID: Optional[str] = None
