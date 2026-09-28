@@ -17,11 +17,12 @@ async def publish_scheduled_posts() -> None:
     db = SessionLocal()
     try:
         now = datetime.now(timezone.utc).replace(tzinfo=None)
-        # Find approved posts that should have been published by now
+        # Find approved posts that should have been published by now (or immediately if no schedule)
+        from sqlalchemy import or_
         scheduled_posts = (
             db.query(Post)
             .filter(Post.status == "approved")
-            .filter(Post.scheduled_at <= now)
+            .filter(or_(Post.scheduled_at <= now, Post.scheduled_at == None))
             .all()
         )
 

@@ -41,7 +41,11 @@ export default function ApprovalQueuePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["posts-list"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+      alert("Post approved successfully!");
     },
+    onError: (err: any) => {
+      alert("Failed to approve post: " + (err.message || err.toString()));
+    }
   });
 
   // Rejection Mutation

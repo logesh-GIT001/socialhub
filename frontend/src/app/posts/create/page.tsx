@@ -49,10 +49,10 @@ export default function CreatePostPage() {
     queryFn: () => api.get("/posts/campaigns"),
   });
 
-  // Create Post mutation
   const createPostMutation = useMutation({
     mutationFn: (payload: any) => api.post("/posts/", payload),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["posts-list"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-posts"] });
       reset();
