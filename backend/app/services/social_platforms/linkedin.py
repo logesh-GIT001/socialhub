@@ -107,36 +107,8 @@ class LinkedInAdapter(BaseSocialAdapter):
             except Exception:
                 pass
 
-            # 3. Fallback to legacy profile endpoint (/v2/me)
-            try:
-                profile_url = "https://api.linkedin.com/v2/me"
-                profile_response = await client.get(
-                    profile_url, headers={"Authorization": f"Bearer {access_token}"}
-                )
-                if profile_response.status_code == 200:
-                    profile_data = profile_response.json()
-                    first_name = profile_data.get("localizedFirstName", "")
-                    last_name = profile_data.get("localizedLastName", "")
-                    name = f"{first_name} {last_name}".strip() or "LinkedIn Profile"
-                    
-                    return {
-                        "access_token": access_token,
-                        "refresh_token": token_data.get("refresh_token"),
-                        "expires_in_seconds": token_data.get("expires_in"),
-                        "platform_user_id": f"urn:li:person:{profile_data['id']}",
-                        "account_name": name,
-                    }
-            except Exception:
-                pass
-
-            # 4. Fallback if only member posting scope exists
-            return {
-                "access_token": access_token,
-                "refresh_token": token_data.get("refresh_token"),
-                "expires_in_seconds": token_data.get("expires_in"),
-                "platform_user_id": "urn:li:person:me",
-                "account_name": "LinkedIn Channel",
-            }
+            # 3. If everything above failed, their LinkedIn App lacks the required products.
+            raise Exception("LinkedIn API Error: Your LinkedIn Developer App is missing the required Products. Please go to the LinkedIn Developer Portal and ensure you have added both 'Sign In with LinkedIn using OpenID Connect' and 'Share on LinkedIn'.")
 
     async def refresh_token(self, refresh_token: str) -> Dict[str, Any]:
         if self.is_mock or refresh_token.startswith("mock_"):
@@ -186,12 +158,7 @@ class LinkedInAdapter(BaseSocialAdapter):
                 if userinfo_res.status_code == 200:
                     author_urn = f"urn:li:person:{userinfo_res.json()['sub']}"
                 else:
-                    profile_url = "https://api.linkedin.com/v2/me"
-                    profile_response = await client.get(
-                        profile_url, headers={"Authorization": f"Bearer {access_token}"}
-                    )
-                    profile_response.raise_for_status()
-                    author_urn = f"urn:li:person:{profile_response.json()['id']}"
+                    raise Exception("LinkedIn API Error: Your LinkedIn Developer App is missing the required Products. Please go to the LinkedIn Developer Portal, add both 'Sign In with LinkedIn using OpenID Connect' AND 'Share on LinkedIn', then Disconnect and Reconnect your account here.")
 
             post_url = "https://api.linkedin.com/v2/ugcPosts"
             
